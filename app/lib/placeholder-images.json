@@ -1,0 +1,11 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "neu-logo",
+      "description": "New Era University Library Department Seal",
+      "imageUrl": "/neu.png",
+      "imageHint": "university seal"
+    }
+  ]
+}
