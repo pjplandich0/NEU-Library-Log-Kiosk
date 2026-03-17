@@ -4,7 +4,7 @@
     {
       "id": "neu-logo",
       "description": "New Era University Official Seal (1975)",
-      "imageUrl": "https://picsum.photos/seed/neu-seal-1975/600/600",
+      "imageUrl": "/neu.png",
       "imageHint": "university seal"
     }
   ]
