@@ -1,5 +1,29 @@
 # NEU Library Management System
 
+
+
+
+
+
+# DEPLOYED (LIVE) APPLICATION LINK: https://neu-library-log-kiosk-3d0uc26kg-paolo9.vercel.app/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 This is a NextJS 15 application integrated with Firebase, designed for library visitor tracking, role-based access control, and administrative analytics for New Era University.
 
 ## Tech Stack
