@@ -1,0 +1,33 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * PROTOTYPE RULES
+     * In a production environment, these would be restricted to authenticated admins.
+     * For this prototype, we allow the kiosk and dashboard to function without complex auth.
+     */
+
+    function isSignedIn(req) {
+      return req.auth != null;
+    }
+
+    match /admins/{adminUid} {
+      // Allow reading and writing for prototype registration and validation
+      allow read, write: if true;
+    }
+
+    match /users/{userId} {
+      // Allow kiosk lookup and admin dashboard management
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
+    match /visitLogs/{visitLogId} {
+      // Allow kiosk to create logs and admin dashboard to list them
+      allow read, create: if true;
+      allow update, delete: if true; // Allow admin dashboard to manage logs
+    }
+  }
+}
