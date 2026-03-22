@@ -1,11 +1,12 @@
 
 // Firebase configuration for the NEU Library Management System.
+// This file uses environment variables for improved security and deployment flexibility.
 
 export const firebaseConfig = {
-  "projectId": "studio-3354134181-ec43e",
-  "appId": "1:487381118557:web:d9b9aa6deacf63f09f67b4",
-  "apiKey": "AIzaSyC9NJ0SFe7bXHWb_zugrJ3MwjyiqnIA7xg",
-  "authDomain": "studio-3354134181-ec43e.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "487381118557"
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
 };

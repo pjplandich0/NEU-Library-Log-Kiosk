@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Search, Download, Circle, User as UserIcon, BookOpen } from 'lucide-react';
 import { Visitor, User } from '@/lib/types';
 import { format } from 'date-fns';
@@ -73,9 +74,12 @@ export function VisitorTable({ visitors, users, onToggleBlock, searchQuery, setS
                 <TableRow key={visitor.id} className="hover:bg-slate-50/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className={cn("p-2 rounded-lg", isEmployee ? "bg-indigo-50 text-indigo-600" : "bg-blue-50 text-blue-600")}>
-                        <UserIcon className="w-4 h-4" />
-                      </div>
+                      <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                        <AvatarImage src={visitor.photoURL || user?.photoURL} alt={visitor.name} />
+                        <AvatarFallback className={cn("text-xs font-bold", isEmployee ? "bg-indigo-50 text-indigo-600" : "bg-blue-50 text-blue-600")}>
+                          {visitor.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
                       <div>
                         <div className="font-bold text-slate-900">{visitor.name}</div>
                         <div className="text-[10px] text-muted-foreground font-mono">{visitor.program}</div>

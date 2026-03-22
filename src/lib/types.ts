@@ -11,6 +11,7 @@ export interface Visitor {
   timestamp: Date;
   checkOutTime?: Date;
   device: 'Desktop' | 'Mobile' | 'Tablet' | 'Kiosk';
+  photoURL?: string;
 }
 
 export interface User {
@@ -24,6 +25,7 @@ export interface User {
   isBlocked: boolean;
   createdAt: string;
   updatedAt: string;
+  photoURL?: string;
 }
 
 export interface DashboardStats {

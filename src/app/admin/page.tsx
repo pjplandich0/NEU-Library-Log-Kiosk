@@ -21,8 +21,25 @@ import {
   ShieldAlert,
   UserPlus,
   ArrowLeftRight,
-  Filter
+  Filter,
+  BarChart3,
+  TrendingUp,
+  FileText,
+  PieChart as PieChartIcon
 } from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  ResponsiveContainer, 
+  Tooltip, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  Legend 
+} from 'recharts';
+import { exportVisitorsToPDF } from '@/lib/pdf-export';
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -54,22 +71,26 @@ export default function AdminDashboard() {
   const { data: rawLogs = [] } = useCollection<any>(logsQuery);
 
   // Transform and Filter Visitors
-  const allVisitors: Visitor[] = useMemo(() => (rawLogs || []).map(log => ({
-    id: log.id,
-    userId: log.userId,
-    name: log.name || 'Unknown',
-    program: log.program || 'N/A',
-    college: log.college || 'N/A',
-    role: log.role || 'Student',
-    reason: log.reasonForVisit,
-    timestamp: log.checkInTime instanceof Timestamp 
-      ? log.checkInTime.toDate() 
-      : log.checkInTime instanceof Date ? log.checkInTime : new Date(log.checkInTime),
-    checkOutTime: log.checkOutTime instanceof Timestamp 
-      ? log.checkOutTime.toDate() 
-      : log.checkOutTime instanceof Date ? log.checkOutTime : (log.checkOutTime ? new Date(log.checkOutTime) : undefined),
-    device: log.deviceType || 'Kiosk'
-  })), [rawLogs]);
+  const allVisitors: Visitor[] = useMemo(() => (rawLogs || []).map(log => {
+    const userMatch = users.find(u => u.id === log.userId);
+    return {
+      id: log.id,
+      userId: log.userId,
+      name: log.name || userMatch?.name || 'Unknown',
+      program: log.program || userMatch?.program || 'N/A',
+      college: log.college || userMatch?.college || 'N/A',
+      role: log.role || userMatch?.role || 'Student',
+      reason: log.reasonForVisit,
+      timestamp: log.checkInTime instanceof Timestamp 
+        ? log.checkInTime.toDate() 
+        : log.checkInTime instanceof Date ? log.checkInTime : new Date(log.checkInTime),
+      checkOutTime: log.checkOutTime instanceof Timestamp 
+        ? log.checkOutTime.toDate() 
+        : log.checkOutTime instanceof Date ? log.checkOutTime : (log.checkOutTime ? new Date(log.checkOutTime) : undefined),
+      device: log.deviceType || 'Kiosk',
+      photoURL: userMatch?.photoURL || log.photoURL
+    };
+  }), [rawLogs, users]);
 
   const filteredVisitors = useMemo(() => {
     return allVisitors.filter(v => {
@@ -82,6 +103,27 @@ export default function AdminDashboard() {
       return matchesReason && matchesCollege && matchesRole && matchesSearch;
     });
   }, [allVisitors, reasonFilter, collegeFilter, roleFilter, searchQuery]);
+
+  // Analytics Calculations
+  const collegeDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredVisitors.forEach(v => {
+      counts[v.college] = (counts[v.college] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [filteredVisitors]);
+
+  const reasonDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredVisitors.forEach(v => {
+      counts[v.reason] = (counts[v.reason] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [filteredVisitors]);
 
   const now = new Date();
   const stats: DashboardStats = useMemo(() => ({
@@ -335,8 +377,12 @@ export default function AdminDashboard() {
                         <div key={v.id} className="flex items-center justify-between py-3 border-b last:border-0">
                           <div className="flex items-center gap-3">
                             <div className="relative">
-                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                {v.name.charAt(0)}
+                              <div className="w-10 h-10 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center text-primary font-bold">
+                                {v.photoURL ? (
+                                  <img src={v.photoURL} alt={v.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  v.name.charAt(0)
+                                )}
                               </div>
                               <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${v.checkOutTime ? 'bg-slate-300' : 'bg-green-500'}`} />
                             </div>
@@ -364,6 +410,67 @@ export default function AdminDashboard() {
             />
           </div>
         );
+      case 'analytics':
+        return (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">In-Depth Analytics</h2>
+                <p className="text-muted-foreground text-sm">Comprehensive breakdown of library usage patterns</p>
+              </div>
+            </div>
+            {renderFilterBar()}
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+               <Card className="border-none shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold">College Participation</CardTitle>
+                    <CardDescription>Visitors categorized by academic department</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-[350px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={collegeDistribution} layout="vertical" margin={{ left: 20, right: 30, top: 20, bottom: 20 }}>
+                        <XAxis type="number" hide />
+                        <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <Tooltip cursor={{ fill: 'rgba(59, 113, 242, 0.05)' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                        <Bar dataKey="value" fill="#3B71F2" radius={[0, 4, 4, 0]} barSize={24} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+               </Card>
+
+               <Card className="border-none shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold">Usage Purpose</CardTitle>
+                    <CardDescription>Primary reasons for library visitation</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-[350px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={reasonDistribution}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={70}
+                          outerRadius={100}
+                          paddingAngle={8}
+                          dataKey="value"
+                        >
+                          {reasonDistribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={['#3B71F2', '#13BAD5', '#6366f1', '#8b5cf6', '#ec4899'][index % 5]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+               </Card>
+            </div>
+
+            <TrafficCharts activeFilter={timeFilter} onFilterChange={setTimeFilter} />
+          </div>
+        );
       case 'visitors':
         return (
           <div className="animate-in fade-in duration-500">
@@ -375,6 +482,56 @@ export default function AdminDashboard() {
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
             />
+          </div>
+        );
+      case 'reports':
+        return (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">System Reports</h2>
+                <p className="text-muted-foreground text-sm">Export library data for physical documentation</p>
+              </div>
+            </div>
+            
+            <Card className="border-none shadow-sm">
+              <CardHeader>
+                <CardTitle>Data Export Center</CardTitle>
+                <CardDescription>Generate and download filtered reports</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100 hover:bg-slate-100/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-primary/10 p-3 rounded-xl text-primary">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900">Comprehensive Visitor Log</p>
+                      <p className="text-sm text-slate-500">Contains all {filteredVisitors.length} currently filtered visitor entries</p>
+                    </div>
+                  </div>
+                  <Button onClick={() => exportVisitorsToPDF(filteredVisitors)} className="gap-2 rounded-xl h-12 px-6">
+                    <TrendingUp className="w-4 h-4" />
+                    Download PDF
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100 hover:bg-slate-100/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-green-50 p-3 rounded-xl text-green-600">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900">User Status Audit</p>
+                      <p className="text-sm text-slate-500">Summary of blocked users and administrative overrides</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="gap-2 rounded-xl h-12 px-6 opacity-50 cursor-not-allowed">
+                    Coming Soon
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
       case 'settings':

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -9,11 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
-import { Scan, LogIn, User as UserIcon, Loader2, Shield } from 'lucide-react';
+import { Scan, LogIn, User as UserIcon, Loader2, Shield, CheckCircle2 } from 'lucide-react';
 import { ReasonSelection } from '@/components/kiosk/reason-selection';
 import { AccessDenied } from '@/components/kiosk/access-denied';
 import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function LibraryEntrance() {
   const auth = useAuth();
@@ -24,7 +24,8 @@ export default function LibraryEntrance() {
   const [identifiedUser, setIdentifiedUser] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const logo = PlaceHolderImages.find(img => img.id === 'neu-logo');
+  const logoUrl = "/neu-logo.png";
+  const bgUrl = "/library-building.jpg";
 
   const checkUserStatus = (userDoc: any) => {
     if (userDoc.isBlocked) {
@@ -50,7 +51,7 @@ export default function LibraryEntrance() {
         toast({ variant: "destructive", title: "Unrecognized Tag", description: "User not found." });
       }
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Error", description: "Database error." });
+      toast({ variant: "destructive", title: "Error", description: error.message || "Database error." });
     } finally {
       setIsVerifying(false);
     }
@@ -68,20 +69,26 @@ export default function LibraryEntrance() {
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
-          const userData = { ...querySnapshot.docs[0].data(), id: querySnapshot.docs[0].id };
+          const userData = { 
+            ...querySnapshot.docs[0].data(), 
+            id: querySnapshot.docs[0].id,
+            photoURL: result.user.photoURL 
+          };
           checkUserStatus(userData);
         } else {
-          // Identify known staff/professors for first-time login
-          const isStaff = result.user.email === 'jcesperanza@neu.edu.ph' || result.user.email === 'jhunbalimbing@gmail.com';
+          const isProfessor = result.user.email === 'jcesperanza@neu.edu.ph' || 
+                             result.user.email === 'jhunbalimbing@gmail.com' ||
+                             result.user.email?.endsWith('@neu.edu.ph');
           
           const newUser = { 
             id: result.user.uid, 
             name: result.user.displayName || 'Guest', 
             email: result.user.email,
+            photoURL: result.user.photoURL,
             isBlocked: false,
-            program: isStaff ? 'Faculty' : 'Library Guest',
-            college: isStaff ? 'Academic Affairs' : 'External',
-            role: isStaff ? 'Professor' : 'Student',
+            program: isProfessor ? 'Faculty' : 'Library Guest',
+            college: isProfessor ? 'Academic Affairs' : 'External',
+            role: isProfessor ? 'Professor' : 'Student',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           };
@@ -91,7 +98,16 @@ export default function LibraryEntrance() {
         }
       }
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Auth Failed", description: "Please ensure your account is authorized." });
+      console.error("Auth Error:", error);
+      let errorMsg = "Please ensure your account is authorized.";
+      if (error.code === 'auth/unauthorized-domain') {
+        errorMsg = "Unauthorized Domain: You must add this URL to 'Authorized Domains' in your Firebase Console.";
+      }
+      toast({ 
+        variant: "destructive", 
+        title: "Google SSO Failed", 
+        description: errorMsg 
+      });
     } finally {
       setIsVerifying(false);
     }
@@ -121,7 +137,11 @@ export default function LibraryEntrance() {
         setTimeout(() => setIsVerifying(false), 2000);
       }
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Admin Login Failed", description: error.message });
+      toast({ 
+        variant: "destructive", 
+        title: "Admin Login Failed", 
+        description: error.message 
+      });
       setIsVerifying(false);
     }
   };
@@ -129,7 +149,6 @@ export default function LibraryEntrance() {
   const handleReasonSelected = (reason: string) => {
     if (!identifiedUser) return;
 
-    // Persist user document to ensure they exist for future exits
     const userRef = doc(firestore, 'users', identifiedUser.id);
     setDocumentNonBlocking(userRef, {
       ...identifiedUser,
@@ -145,6 +164,7 @@ export default function LibraryEntrance() {
       reasonForVisit: reason,
       checkInTime: new Date(),
       deviceType: 'Kiosk',
+      photoURL: identifiedUser.photoURL || null
     });
 
     setView('success');
@@ -165,11 +185,23 @@ export default function LibraryEntrance() {
 
   if (view === 'success') {
     return (
-      <div className="min-h-screen bg-[#E9F0FF] flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-12 text-center space-y-6 rounded-[2.5rem] border-none shadow-2xl bg-white/80 backdrop-blur-xl">
-          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <LogIn className="w-10 h-10" />
-          </div>
+      <div className="min-h-screen bg-[#E9F0FF] flex items-center justify-center p-4 relative overflow-hidden">
+        <Image src={bgUrl} alt="Library Background" fill className="object-cover brightness-50 z-0" priority />
+        <Card className="max-w-md w-full p-12 text-center space-y-6 rounded-[2.5rem] border-none shadow-2xl bg-white/80 backdrop-blur-2xl z-10">
+          {identifiedUser?.photoURL ? (
+            <div className="relative w-28 h-28 mx-auto mb-4">
+              <Image 
+                src={identifiedUser.photoURL} 
+                alt={identifiedUser.name} 
+                fill 
+                className="rounded-full object-cover border-4 border-white shadow-xl" 
+              />
+            </div>
+          ) : (
+            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+          )}
           <h2 className="text-3xl font-bold text-[#1A1C1E]">Welcome to NEU Library!</h2>
           <p className="text-xl font-bold text-primary">{identifiedUser?.name}</p>
           <p className="text-[#6C757D]">Your visit has been logged. Enjoy the library!</p>
@@ -185,12 +217,15 @@ export default function LibraryEntrance() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E9F0FF] flex flex-col items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-[#E9F0FF] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <Image src={bgUrl} alt="Library Background" fill className="object-cover brightness-75 z-0" priority />
+      <div className="absolute inset-0 bg-black/10 z-1" />
+      
       <div className="absolute top-8 right-8 z-50">
         <Button 
           variant="outline" 
           onClick={handleAdminLogin}
-          className="rounded-full bg-white border-2 border-primary text-primary hover:bg-slate-50 transition-all shadow-md px-6 py-4 flex items-center gap-3 hover:scale-105"
+          className="rounded-full bg-white/90 backdrop-blur-md border-2 border-primary text-primary hover:bg-white transition-all shadow-md px-6 py-4 flex items-center gap-3 hover:scale-105"
         >
           {isVerifying ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -203,20 +238,17 @@ export default function LibraryEntrance() {
         </Button>
       </div>
 
-      <Card className="max-w-[720px] w-full bg-white/90 backdrop-blur-2xl border-none shadow-2xl rounded-[3rem] p-10 md:p-16 flex flex-col items-center text-center">
-        {logo && (
-          <div className="mb-8 relative w-32 h-32">
-            <Image 
-              src={logo.imageUrl} 
-              alt={logo.description} 
-              width={128} 
-              height={128} 
-              className="object-contain"
-              priority
-              data-ai-hint={logo.imageHint}
-            />
-          </div>
-        )}
+      <Card className="max-w-[720px] w-full bg-white/80 backdrop-blur-2xl border-none shadow-2xl rounded-[3rem] p-10 md:p-16 flex flex-col items-center text-center z-10">
+        <div className="mb-8 relative w-32 h-32">
+          <Image 
+            src={logoUrl}
+            alt="New Era University Logo"
+            width={128} 
+            height={128} 
+            className="object-contain"
+            priority
+          />
+        </div>
         <div className="mb-10 flex flex-col items-center justify-center w-full">
            <h2 className="text-4xl md:text-5xl font-black text-primary tracking-tighter uppercase leading-none">
              NEW ERA UNIVERSITY
@@ -228,7 +260,7 @@ export default function LibraryEntrance() {
         <h1 className="text-5xl font-extrabold text-[#1A1C1E] mb-2 tracking-tight">Library Entrance</h1>
         <p className="text-[#6C757D] text-lg mb-12">Sign in to access library resources</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-          <button onClick={() => handleRfidScan('RFID-PAOLO')} className="group bg-[#4F81FF] hover:bg-[#3B71F2] transition-all rounded-[2rem] p-8 text-white flex flex-col items-center space-y-2 shadow-lg active:scale-95 text-center text-center">
+          <button onClick={() => handleRfidScan('RFID-PAOLO')} className="group bg-[#4F81FF] hover:bg-[#3B71F2] transition-all rounded-[2rem] p-8 text-white flex flex-col items-center space-y-2 shadow-lg active:scale-95 text-center">
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
               {isVerifying ? <Loader2 className="w-8 h-8 animate-spin" /> : <Scan className="w-8 h-8" />}
             </div>
@@ -237,7 +269,7 @@ export default function LibraryEntrance() {
               <p className="text-xs text-white/70">Tap your student ID card</p>
             </div>
           </button>
-          <button onClick={handleGoogleSSO} className="group bg-white hover:bg-slate-50 transition-all rounded-[2rem] p-8 border text-[#1A1C1E] flex flex-col items-center space-y-2 shadow-sm active:scale-95 text-center text-center">
+          <button onClick={handleGoogleSSO} className="group bg-white/90 hover:bg-white transition-all rounded-[2rem] p-8 border text-[#1A1C1E] flex flex-col items-center space-y-2 shadow-sm active:scale-95 text-center">
             <div className="w-16 h-16 bg-[#E9F0FF] text-[#4F81FF] rounded-full flex items-center justify-center">
               {isVerifying ? <Loader2 className="w-8 h-8 animate-spin" /> : <UserIcon className="w-8 h-8" />}
             </div>
@@ -248,7 +280,7 @@ export default function LibraryEntrance() {
           </button>
         </div>
       </Card>
-      <footer className="mt-8 text-[#6C757D] text-sm font-medium">Kiosk ID: LIB-ENT-01</footer>
+      <footer className="mt-8 text-white font-bold text-sm drop-shadow-md z-10">Kiosk ID: LIB-ENT-01</footer>
       <Toaster />
     </div>
   );

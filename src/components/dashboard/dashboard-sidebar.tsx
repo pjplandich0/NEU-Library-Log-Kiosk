@@ -2,14 +2,14 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { 
   LayoutDashboard, 
   BarChart3, 
   Users, 
   FileText, 
   Settings, 
-  LogOut,
-  Library
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -33,9 +33,7 @@ export function DashboardSidebar({ activeTab, onTabChange }: DashboardSidebarPro
   return (
     <div className="w-64 border-r bg-white h-screen fixed left-0 top-0 flex flex-col z-10">
       <div className="p-6 flex items-center gap-3">
-        <div className="bg-primary p-2 rounded-lg">
-          <Library className="text-white h-6 w-6" />
-        </div>
+        <Image src="/neu-logo.png" alt="New Era University Logo" width={40} height={40} className="object-contain" />
         <span className="font-headline font-bold text-lg tracking-tight">NEU Library</span>
       </div>
       

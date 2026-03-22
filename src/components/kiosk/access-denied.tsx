@@ -32,17 +32,14 @@ export function AccessDenied({ onReturnHome, kioskId = "LIB-SEC-0421" }: AccessD
     <div className="min-h-screen bg-[#E9F0FF] flex flex-col items-center justify-center p-4">
       <Card className="max-w-[720px] w-full bg-white/95 backdrop-blur-2xl border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] rounded-[3rem] p-12 md:p-20 flex flex-col items-center text-center relative overflow-hidden">
         
-        {/* Logo Section */}
-        <div className="mb-8 relative w-32 h-32">
-           <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-             <Image 
-               src="/neu.png" 
-               alt="NEU Logo" 
-               width={100} 
-               height={100} 
-               className="object-contain"
-             />
-           </div>
+        <div className="mb-6">
+          <Image 
+            src="/neu-logo.png"
+            alt="New Era University Logo"
+            width={140} 
+            height={140} 
+            className="object-contain opacity-80"
+          />
         </div>
 
         <div className="space-y-2 mb-12">
