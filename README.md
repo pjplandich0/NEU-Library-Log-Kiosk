@@ -1,63 +1,52 @@
+
 # NEU Library Management System
 
+This is the official Library Management System for New Era University, featuring kiosk-based visitor tracking and an administrative dashboard.
 
+## 🖼️ How to Change the Logo
+To update the logo across the entire application:
+1. Open the file: `src/app/lib/placeholder-images.json`
+2. Replace the `imageUrl` value with your new logo link (e.g., a link from your website or a hosted image).
+3. The change will automatically reflect on the Entrance, Exit, and Admin pages.
 
+---
 
+## 🚀 Deployment to Vercel (FIX FOR AUTH FAILED)
 
+If your Google SSO is failing with "Auth Failed" or you see a `no-options` error on Vercel, you **MUST** do these two things:
 
-# DEPLOYED (LIVE) APPLICATION LINK: https://neu-library-log-kiosk-3d0uc26kg-paolo9.vercel.app/
+### 1. Add Environment Variables in Vercel
+Go to your **Vercel Project Settings > Environment Variables** and add these 5 keys exactly:
 
+| Key | Value |
+| :--- | :--- |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `studio-3354134181-ec43e` |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | `1:487381118557:web:d9b9aa6deacf63f09f67b4` |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | `AIzaSyC9NJ0SFe7bXHWb_zugrJ3MwjyiqnIA7xg` |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | `studio-3354134181-ec43e.firebaseapp.com` |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | `487381118557` |
 
+### 2. Authorize your Vercel Domain in Firebase
+Firebase blocks login requests from unknown websites. You must tell Firebase that your Vercel site is safe:
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Select your project: **studio-3354134181-ec43e**.
+3. Go to **Authentication** > **Settings** (tab) > **Authorized Domains**.
+4. Click **Add Domain** and enter your Vercel URL (e.g., `your-project-name.vercel.app`).
+5. Also ensure `localhost` is in that list for local testing.
 
+---
 
+## 📂 Project Structure for GitHub
+When you download this project as a ZIP, upload everything **except** `node_modules`.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-This is a NextJS 15 application integrated with Firebase, designed for library visitor tracking, role-based access control, and administrative analytics for New Era University.
-
-## Tech Stack
-- **Framework**: Next.js 15 (App Router)
-- **Styling**: Tailwind CSS + ShadCN UI
-- **Icons**: Lucide React
-- **Database**: **Firebase Firestore (NoSQL)**
-- **Authentication**: Firebase Auth (Google SSO + RFID Simulation)
-- **Reporting**: jsPDF for visitor logs
+### Key Folders & Files:
+- `src/`: All application source code (Logic, UI, Styles).
+- `public/`: Static assets.
+- `package.json`: Project dependencies.
+- `firestore.rules`: Database security rules.
+- `.gitignore`: Automatically tells GitHub to ignore `node_modules`.
 
 ## Key Features
-- **Kiosk Entrance/Exit**: Support for RFID scanning and Google SSO.
-- **Role-Based Access**: Specialized handling for Students, Professors, and Staff.
-- **Admin Dashboard**: Real-time stats, dynamic filtering (by Reason, College, and Role), and user blocking.
-- **Automated Seeding**: Quick setup for testing with predefined university accounts.
-
-## How to Upload to GitHub
-1. **Find the Download Button**:
-   - **Step A**: Look at the **very top center** of your screen where it says **"NEU Library FINAL!"**.
-   - **Step B**: Click on that text (**"NEU Library FINAL!"**). A dropdown menu will appear.
-   - **Step C**: Select **"Download project as ZIP"**. This will give you one file containing everything.
-2. **Extract the ZIP**: Unzip the folder on your computer.
-3. **Open Terminal**: Navigate into the project folder on your computer.
-4. **Run these commands**:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit of NEU Library System"
-   git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-   git push -u origin main
-   ```
-
-## Local Development
-1. Install dependencies: `npm install`
-2. Run the dev server: `npm run dev`
-3. Access the kiosk at `http://localhost:9002`
+- **Branding**: Official NEU Library Seal and Branding (configurable in `placeholder-images.json`).
+- **Kiosk Logic**: Seamless check-in/out for students and professors.
+- **Admin Dashboard**: Real-time analytics with PDF export capabilities.
