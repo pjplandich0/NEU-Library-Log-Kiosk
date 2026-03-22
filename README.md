@@ -1,6 +1,14 @@
 
 # NEU Library Management System
 
+
+# ENTRANCE: https://neu-library-log-kiosk-o6q5ob8vp-paolo9.vercel.app/
+# ADMIN DASHBOARD: Kindly login with your google credentials 
+# EXIT: https://neu-library-log-kiosk-o6q5ob8vp-paolo9.vercel.app/exit
+
+
+
+
 This is the official Library Management System for New Era University, featuring kiosk-based visitor tracking and an administrative dashboard.
 
 ## 🖼️ Branding & Logo
