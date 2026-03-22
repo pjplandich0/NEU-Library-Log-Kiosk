@@ -43,7 +43,7 @@ export function AccessDenied({ onReturnHome, kioskId = "LIB-SEC-0421" }: AccessD
         </div>
 
         <div className="space-y-2 mb-12">
-          <h2 className="text-xs font-bold tracking-[0.2em] text-[#1A1C1E] uppercase">Central Library Systems</h2>
+          <h2 className="text-xs font-bold tracking-[0.2em] text-[#1A1C1E] uppercase"></h2>
         </div>
 
         {/* Access Denied Icon */}
