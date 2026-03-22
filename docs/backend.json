@@ -1,0 +1,157 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Stores information about individual library users, including their identity, academic program, unique RFID tag for quick check-in, and administrative status regarding access to library services.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the library user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, primarily used for identification and Google SSO integration.",
+          "format": "email"
+        },
+        "program": {
+          "type": "string",
+          "description": "The academic program or department the user is associated with (e.g., 'Computer Science', 'Business Administration')."
+        },
+        "rfidTag": {
+          "type": "string",
+          "description": "The unique identifier from the user's RFID card or tag, used for quick check-in at the library entrance."
+        },
+        "isBlocked": {
+          "type": "boolean",
+          "description": "A flag indicating whether the user is currently blocked from accessing library services by an administrator."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user's record was first created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user's record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "program",
+        "rfidTag",
+        "isBlocked",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "VisitLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "VisitLog",
+      "type": "object",
+      "description": "Records individual visits (check-ins) of users to the library, capturing details such as check-in and check-out times, the user's stated reason for visiting, and the device or method used to log the visit.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the VisitLog entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User entity who made this visit. (Relationship: User 1:N VisitLog)"
+        },
+        "checkInTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the user checked into the library.",
+          "format": "date-time"
+        },
+        "checkOutTime": {
+          "type": "string",
+          "description": "Optional timestamp indicating when the user checked out. Can be null if the session is ongoing or not explicitly recorded.",
+          "format": "date-time"
+        },
+        "reasonForVisit": {
+          "type": "string",
+          "description": "The user's stated reason for visiting the library (e.g., 'Study', 'Research', 'Group Meeting', 'Use Computers')."
+        },
+        "deviceType": {
+          "type": "string",
+          "description": "The type of mechanism or device used to record this check-in (e.g., 'Desktop', 'Mobile', 'RFID Scanner'). Used for traffic source breakdown in analytics."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "checkInTime",
+        "reasonForVisit",
+        "deviceType"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores individual user profiles. Access is path-based for users (userId matches request.auth.uid) and global for administrators. Includes 'rfidTag' for lookup and 'isBlocked' for admin management.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique Firebase Authentication UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/visitLogs/{visitLogId}",
+        "definition": {
+          "entityName": "VisitLog",
+          "schema": {
+            "$ref": "#/backend/entities/VisitLog"
+          },
+          "description": "Records all library visits. Contains 'userId' denormalized for authorization independence. Administrators can list all logs; individual users can list their own logs by querying on 'userId'.",
+          "params": [
+            {
+              "name": "visitLogId",
+              "description": "The unique identifier for a specific library visit log."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/admins/{adminUid}",
+        "definition": {
+          "entityName": "AdminRole",
+          "schema": {
+            "$ref": "#/backend/entities/AdminRole"
+          },
+          "description": "Identifies users with administrative privileges. Document ID is the user's Firebase UID. Existence of a document at this path grants the administrator role. This is a DBAC implementation for global admin access.",
+          "params": [
+            {
+              "name": "adminUid",
+              "description": "The unique Firebase Authentication UID of an administrator."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to be highly secure, scalable, and debuggable, strictly adhering to the core design principles. It leverages structural segregation and denormalization to ensure authorization independence and support queryable access patterns (QAPs).\n\n1.  **Authorization Independence (Denormalization for VisitLog):**\n    *   For the `/visitLogs/{visitLogId}` collection, each `VisitLog` document includes a `userId` field. This denormalization means that to check if a user (`request.auth.uid`) can access a `VisitLog` document, the security rules only need to compare `request.auth.uid` with `resource.data.userId` *within that document itself*. This completely eliminates the need for expensive and complex `get()` calls to a parent `/users/{userId}` document for authorization, fulfilling the critical mandate for Authorization Independence. It also enables atomic operations for creating `VisitLog`s without needing to first read the `User` document for permissions.\n    *   For `/users/{userId}` documents, individual user access is inherently path-based (`{userId}` in the path matches `request.auth.uid`). Administrative access to any user document is determined by checking the existence of `request.auth.uid` in the separate `/admins/{adminUid}` collection, again avoiding `get()` calls on `User` documents themselves for admin role checks.\n\n2.  **Queryable Access Patterns (QAPs) via Structural Segregation:**\n    *   **`/users/{userId}`:** This collection stores all user profiles. For the Admin Dashboard, administrators (verified via `/admins/{adminUid}`) can securely `list` and filter all users. Individual users can only `read` their own specific document (`/users/{request.auth.uid}`). This ensures that `list` operations for admins are efficient and secure, while individual user access is tightly scoped.\n    *   **`/visitLogs/{visitLogId}`:** This is a top-level collection containing all visit records. This structure is crucial for the Admin Dashboard's ability to display 'Real-time Visitor Table', 'Statistics Cards', and 'Traffic Overview'. Administrators (from `/admins/{adminUid}`) can securely `list` all documents in this collection for global analytics and filtering. Concurrently, individual users can securely query and `list` *only their own* visit logs by filtering on the `userId` field (e.g., `db.collection('visitLogs').where('userId', '==', request.auth.uid)`). This satisfies the QAPs requirement by providing distinct, secure `list` capabilities for both global admin views and individual user views without compromising data security or performance.\n    *   **`/admins/{adminUid}`:** This dedicated collection uses **existence over content** to define administrator roles. Accessing this collection is a direct check for `exists(/databases/$(database)/documents/admins/$(request.auth.uid))`, which is a highly efficient and secure QAP for role-based access control.\n\n3.  **Clarity of Intent & Predictability:** Collection names (`users`, `visitLogs`, `admins`) and wildcard parameters (`{userId}`, `{visitLogId}`, `{adminUid}`) are explicit and semantic. The `isBlocked` field in `User` provides clear state modeling. The `rfidTag` for login (as an `unauthenticated` process to retrieve a `userId`) will require a Cloud Function to securely query the `/users` collection by `rfidTag` and return necessary data, preventing direct insecure client-side queries against potentially sensitive data, upholding robust security rules for QAPs.\n\nThis design effectively isolates authorization logic, simplifies security rules, and supports the diverse read and write patterns required by both the user-facing application and the administrative dashboard, while prioritizing atomic operations and efficient data retrieval."
+  }
+}
